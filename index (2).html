@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>杜千娜 | 策略分析师</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'void': '#050505',
+                        'ivory': '#F0F0F0',
+                        'acid': '#CCFF00',
+                        'glass': 'rgba(255, 255, 255, 0.03)',
+                        'glass-border': 'rgba(255, 255, 255, 0.08)'
+                    },
+                    fontFamily: {
+                        'sans': ['Inter', 'Noto Sans SC', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: #050505;
+            color: #F0F0F0;
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            overflow-x: hidden;
+            cursor: none;
+        }
+        
+        /* 噪点纹理 */
+        .noise-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+        }
+        
+        /* 自定义光标 */
+        .custom-cursor {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            border: 1px solid #CCFF00;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10000;
+            mix-blend-mode: difference;
+            transition: transform 0.15s ease-out, width 0.2s, height 0.2s;
+            transform: translate(-50%, -50%);
+        }
+        
+        .custom-cursor.hover {
+            width: 50px;
+            height: 50px;
+            background: rgba(204, 255, 0, 0.1);
+        }
+        
+        .cursor-dot {
+            position: fixed;
+            width: 6px;
+            height: 6px;
+            background: #CCFF00;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10001;
+            transform: translate(-50%, -50%);
+        }
+        
+        /* 流体背景 */
+        .liquid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        
+        .liquid-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.15;
+            animation: float 20s infinite ease-in-out;
+        }
+        
+        .blob-1 {
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, #1a1a2e 0%, transparent 70%);
+            top: -200px;
+            right: -200px;
+            animation-delay: 0s;
+        }
+        
+        .blob-2 {
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, #16213e 0%, transparent 70%);
+            bottom: -150px;
+            left: -150px;
+            animation-delay: -5s;
+        }
+        
+        .blob-3 {
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, #0f3460 0%, transparent 70%);
+            top: 50%;
+            left: 50%;
+            animation-delay: -10s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(50px, -50px) scale(1.1); }
+            50% { transform: translate(-30px, 30px) scale(0.95); }
+            75% { transform: translate(-50px, -30px) scale(1.05); }
+        }
+        
+        /* 玻璃拟态 */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+        }
+        
+        .glass-card:hover {
+            border-color: rgba(204, 255, 0, 0.2);
+            background: rgba(255, 255, 255, 0.03);
+        }
+        
+        /* 跑马灯 */
+        .marquee-container {
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        
+        .marquee-content {
+            display: inline-flex;
+            animation: marquee 30s linear infinite;
+        }
+        
+        .marquee-content:hover {
+            animation-play-state: paused;
+        }
+        
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        
+        .skill-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 12px 28px;
+            margin: 0 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 100px;
+            font-size: 14px;
+            color: #F0F0F0;
+            transition: all 0.3s ease;
+        }
+        
+        .skill-tag:hover {
+            background: rgba(204, 255, 0, 0.1);
+            border-color: #CCFF00;
+            color: #CCFF00;
+        }
+        
+        /* 时间轴 */
+        .timeline-item {
+            position: relative;
+            padding-left: 40px;
+            padding-bottom: 40px;
+            opacity: 0.4;
+            transition: all 0.4s ease;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 8px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #333;
+            border: 2px solid #444;
+            transition: all 0.4s ease;
+        }
+        
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 24px;
+            width: 2px;
+            height: calc(100% - 16px);
+            background: linear-gradient(to bottom, #333, transparent);
+        }
+        
+        .timeline-item:last-child::after {
+            display: none;
+        }
+        
+        .timeline-item.active {
+            opacity: 1;
+        }
+        
+        .timeline-item.active::before {
+            background: #CCFF00;
+            border-color: #CCFF00;
+            box-shadow: 0 0 20px rgba(204, 255, 0, 0.5);
+        }
+        
+        /* 磁吸效果 */
+        .magnetic {
+            transition: transform 0.3s ease-out;
+        }
+        
+        /* 文字渐变 */
+        .text-gradient {
+            background: linear-gradient(135deg, #F0F0F0 0%, #888 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .text-acid {
+            color: #CCFF00;
+        }
+        
+        /* 滚动条 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #050505;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #CCFF00;
+        }
+        
+        /* 链接下划线动画 */
+        .link-underline {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .link-underline::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: #CCFF00;
+            transition: width 0.3s ease;
+        }
+        
+        .link-underline:hover::after {
+            width: 100%;
+        }
+        
+        /* 按钮样式 */
+        .btn-acid {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 32px;
+            background: #CCFF00;
+            color: #050505;
+            font-weight: 600;
+            border-radius: 100px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        
+        .btn-acid:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 40px rgba(204, 255, 0, 0.4);
+        }
+        
+        /* 隐藏默认光标 */
+        a, button, .magnetic {
+            cursor: none;
+        }
+        
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .custom-cursor, .cursor-dot {
+                display: none;
+            }
+            body {
+                cursor: auto;
+            }
+            a, button, .magnetic {
+                cursor: pointer;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- 噪点纹理 -->
+        <div class="noise-overlay"></div>
+        
+        <!-- 自定义光标 -->
+        <div class="custom-cursor" :class="{ hover: isHovering }" :style="cursorStyle"></div>
+        <div class="cursor-dot" :style="dotStyle"></div>
+        
+        <!-- 流体背景 -->
+        <div class="liquid-bg">
+            <div class="liquid-blob blob-1"></div>
+            <div class="liquid-blob blob-2"></div>
+            <div class="liquid-blob blob-3"></div>
+        </div>
+        
+        <!-- Hero Section -->
+        <section class="min-h-screen flex items-center justify-center relative px-6">
+            <div class="text-center max-w-5xl mx-auto">
+                <div class="hero-subtitle text-sm tracking-[0.3em] text-gray-500 mb-6 opacity-0">
+                    {{ profileData.role }}
+                </div>
+                <h1 class="hero-title text-[clamp(3rem,12vw,8rem)] font-black leading-none tracking-tighter mb-8">
+                    <span class="text-gradient">{{ profileData.name }}</span>
+                </h1>
+                <p class="hero-desc text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-12 leading-relaxed opacity-0">
+                    {{ profileData.tagline }}
+                </p>
+                <div class="hero-cta flex flex-wrap justify-center gap-4 opacity-0">
+                    <a :href="'mailto:' + profileData.email" class="btn-acid magnetic" @mouseenter="isHovering = true" @mouseleave="isHovering = false">
+                        <span>联系我</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </a>
+                </div>
+                <div class="hero-scroll absolute bottom-12 left-1/2 -translate-x-1/2 opacity-0">
+                    <div class="w-6 h-10 border-2 border-gray-600 rounded-full flex justify-center pt-2">
+                        <div class="w-1 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- About Section - Bento Grid -->
+        <section class="py-32 px-6">
+            <div class="max-w-6xl mx-auto">
+                <h2 class="section-title text-4xl md:text-5xl font-bold mb-16 text-center opacity-0">
+                    关于我
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- 简介卡片 - 大 -->
+                    <div class="bento-card glass-card md:col-span-2 p-8 opacity-0" @mouseenter="isHovering = true" @mouseleave="isHovering = false">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-full bg-acid/10 flex items-center justify-center">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#CCFF00" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-semibold">个人简介</h3>
+                        </div>
+                        <p class="text-gray-400 leading-relaxed">
+                            {{ profileData.bio }}
+                        </p>
+                    </div>
+                    
+                    <!-- 经验年限 -->
+                    <div class="bento-card glass-card p-8 opacity-0" @mouseenter="isHovering = true" @mouseleave="isHovering = false">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-full bg-acid/10 flex items-center justify-center">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#CCFF00" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <polyline points="12 6 12 12 16 14"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-semibold">实习经验</h3>
+                        </div>
+                        <div class="text-5xl font-black text-acid mb-2">{{ profileData.experienceYears }}+</div>
+                        <p class="text-gray-500">段实习经历</p>
+                    </div>
+                    
+                    <!-- 城市 -->
+                    <div class="bento-card glass-card p-8 opacity-0" @mouseenter="isHovering = true" @mouseleave="isHovering = false">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-full bg-acid/10 flex items-center justify-center">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#CCFF00" stroke-width="2">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                                    <circle cx="12" cy="10" r="3"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-semibold">所在地</h3>
+                        </div>
+                        <div class="text-3xl font-bold text-ivory">{{ profileData.location }}</div>
+                        <p class="text-gray-500 mt-2">中国</p>
+                    </div>
+                    
+                    <!-- 教育背景 -->
+                    <div class="bento-card glass-card md:col-span-2 p-8 opacity-0" @mouseenter="isHovering = true" @mouseleave="isHovering = false">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-full bg-acid/10 flex items-center justify-center">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#CCFF00" stroke-width="2">
+                                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                                    <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-semibold">教育背景</h3>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <div class="font-semibold text-ivory">浙江大学</div>
+                                    <div class="text-gray-500">环境科学硕士</div>
+                                </div>
+                                <span class="text-sm text-gray-600">2022-2025</span>
+                            </div>
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <div class="font-semibold text-ivory">南开大学</div>
+                                    <div class="text-gray-500">金融学 & 环境科学双学位</div>
+                                </div>
+                                <span class="text-sm text-gray-600">2018-2022</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Experience Section - Timeline -->
+        <section class="py-32 px-6">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="section-title text-4xl md:text-5xl font-bold mb-16 text-center opacity-0">
+                    实习经历
+                </h2>
+                <div class="timeline-container">
+                    <div v-for="(exp, index) in profileData.experiences" 
+                         :key="index"
+                         class="timeline-item"
+                         :class="{ active: activeTimeline === index }"
+                         @mouseenter="activeTimeline = index; isHovering = true"
+                         @mouseleave="isHovering = false">
+                        <div class="flex flex-col md:flex-row md:justify-between md:items-start gap-2 mb-3">
+                            <div>
+                                <h3 class="text-xl font-bold text-ivory">{{ exp.company }}</h3>
+                                <p class="text-acid font-medium">{{ exp.position }}</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-sm text-gray-500">{{ exp.period }}</span>
+                                <p class="text-sm text-gray-600">{{ exp.location }}</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-400 text-sm leading-relaxed">{{ exp.description }}</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Skills Section - Marquee -->
+        <section class="py-32 overflow-hidden">
+            <h2 class="section-title text-4xl md:text-5xl font-bold mb-16 text-center opacity-0">
+                专业技能
+            </h2>
+            <div class="marquee-container mb-8">
+                <div class="marquee-content">
+                    <span v-for="skill in [...profileData.skills, ...profileData.skills]" 
+                          :key="skill"
+                          class="skill-tag magnetic"
+                          @mouseenter="isHovering = true"
+                          @mouseleave="isHovering = false">
+                        {{ skill }}
+                    </span>
+                </div>
+            </div>
+            <div class="marquee-container" style="direction: rtl;">
+                <div class="marquee-content" style="animation-direction: reverse;">
+                    <span v-for="skill in [...profileData.tools, ...profileData.tools]" 
+                          :key="skill"
+                          class="skill-tag magnetic"
+                          @mouseenter="isHovering = true"
+                          @mouseleave="isHovering = false">
+                        {{ skill }}
+                    </span>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Publications Section -->
+        <section class="py-32 px-6">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="section-title text-4xl md:text-5xl font-bold mb-16 text-center opacity-0">
+                    科研成果
+                </h2>
+                <div class="space-y-6">
+                    <div v-for="(pub, index) in profileData.publications" 
+                         :key="index"
+                         class="pub-card glass-card p-8 opacity-0"
+                         @mouseenter="isHovering = true"
+                         @mouseleave="isHovering = false">
+                        <div class="flex items-start gap-4">
+                            <div class="w-12 h-12 rounded-full bg-acid/10 flex items-center justify-center flex-shrink-0">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#CCFF00" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                    <polyline points="14 2 14 8 20 8"/>
+                                    <line x1="16" y1="13" x2="8" y2="13"/>
+                                    <line x1="16" y1="17" x2="8" y2="17"/>
+                                    <polyline points="10 9 9 9 8 9"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-ivory mb-2">{{ pub.title }}</h3>
+                                <p class="text-gray-500 text-sm mb-2">{{ pub.journal }}</p>
+                                <div class="flex items-center gap-4">
+                                    <span class="text-acid text-sm font-medium">IF: {{ pub.impactFactor }}</span>
+                                    <span class="text-gray-600 text-sm">{{ pub.status }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Footer - Contact -->
+        <footer class="min-h-[70vh] flex items-center justify-center px-6 py-32 relative">
+            <div class="text-center max-w-4xl mx-auto">
+                <p class="text-gray-500 text-sm tracking-[0.3em] mb-8 footer-subtitle opacity-0">准备好开始了吗？</p>
+                <h2 class="footer-title text-[clamp(2.5rem,8vw,6rem)] font-black leading-none mb-12 opacity-0">
+                    <span class="text-gradient">一起合作</span>
+                </h2>
+                <div class="footer-contact flex flex-col items-center gap-6 mb-16 opacity-0">
+                    <a :href="'mailto:' + profileData.email" 
+                       class="text-2xl md:text-3xl font-medium text-ivory link-underline magnetic"
+                       @mouseenter="isHovering = true"
+                       @mouseleave="isHovering = false">
+                        {{ profileData.email }}
+                    </a>
+                    <a :href="'tel:' + profileData.phone" 
+                       class="text-lg text-gray-400 link-underline magnetic"
+                       @mouseenter="isHovering = true"
+                       @mouseleave="isHovering = false">
+                        {{ profileData.phone }}
+                    </a>
+                </div>
+                <div class="footer-social flex justify-center gap-8 opacity-0">
+                    <a v-for="link in profileData.socialLinks" 
+                       :key="link.name"
+                       :href="link.url"
+                       class="w-12 h-12 rounded-full border border-gray-700 flex items-center justify-center text-gray-400 hover:border-acid hover:text-acid transition-all magnetic"
+                       @mouseenter="isHovering = true"
+                       @mouseleave="isHovering = false">
+                        <span class="text-sm font-medium">{{ link.name }}</span>
+                    </a>
+                </div>
+                <div class="mt-24 pt-8 border-t border-gray-800">
+                    <p class="text-gray-600 text-sm">
+                        © {{ new Date().getFullYear() }} {{ profileData.name }}. All rights reserved.
+                    </p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // ============================================
+        // 配置数据 - 可在此修改个人信息
+        // ============================================
+        const profileData = {
+            // 基本信息
+            name: "杜千娜",
+            role: "STRATEGY ANALYST",
+            tagline: "策略分析师 | 环境科学硕士 | 金融双学位",
+            location: "杭州",
+            email: "qianna2001@163.com",
+            phone: "(86) 186-3128-3988",
+            experienceYears: 5,
+            
+            // 个人简介
+            bio: "浙江大学环境科学硕士，南开大学金融学与环境科学双学位。拥有丰富的互联网大厂战略分析经验，曾在网易、滴滴、快手等知名企业实习。专注于游戏用户研究、行业分析和商业策略制定。同时以第一作者身份发表SCI一区论文，影响因子12。",
+            
+            // 实习经历
+            experiences: [
+                {
+                    company: "网易",
+                    position: "市场中心 · 策略分析师",
+                    period: "2024",
+                    location: "杭州",
+                    description: "负责游戏用户流失诊断、题材接受度研究、题材偏好度盘点等工作。通过数据分析、用户访谈和桌面调研，产出多份分析报告，为业务侧提供策划、宣发、引流及运营建议。"
+                },
+                {
+                    company: "滴滴",
+                    position: "代驾事业部 · 战略商分实习生",
+                    period: "2023",
+                    location: "杭州",
+                    description: "监控追踪滴滴代驾在全国各类城市的经营数据，进行城市宏观环境分析、竞品数据梳理，产出调研报告及经营建议。参与多个指定行业的市场规模、集中度、商业模式扫描。"
+                },
+                {
+                    company: "快手",
+                    position: "战略行研中心 · 战略分析实习生",
+                    period: "2023",
+                    location: "北京",
+                    description: "参与公司多项战略课题研究，进行行业头部玩家扫描，分析赛道情况和潜在进入机会。深度参与蔚来、理想、Tesla等公司20+场次专家访谈，进行信息速记并整理会议纪要。"
+                },
+                {
+                    company: "前海维港创投基金",
+                    position: "行业研究实习生",
+                    period: "2022",
+                    location: "深圳",
+                    description: "负责AIOT行业研究分析，对水下机器人细分行业进行市场规模、竞争格局、商业模式研究。项目报告获得公司内部行业研究大赛冠军，协助基金进行直投决策。"
+                },
+                {
+                    company: "中泰证券研究所",
+                    position: "电新组 · 行业研究实习生",
+                    period: "2022",
+                    location: "上海",
+                    description: "搭建框架对海外户用储能行业新进需求进行分析研判，核心瞄准欧美老牌户储市场及新兴户储市场。使用IRR模型测算居民布置户用光储产品的经济性。"
+                }
+            ],
+            
+            // 技能标签
+            skills: [
+                "战略分析",
+                "行业研究",
+                "用户研究",
+                "数据分析",
+                "商业分析",
+                "市场调研",
+                "竞品分析",
+                "经营分析",
+                "投资研究",
+                "财务分析"
+            ],
+            
+            // 工具标签
+            tools: [
+                "Python",
+                "C++",
+                "Matlab",
+                "Tableau",
+                "Think-cell",
+                "Wind",
+                "iFind",
+                "Microsoft Office",
+                "英语工作语言"
+            ],
+            
+            // 科研成果
+            publications: [
+                {
+                    title: "Estimate Gaps of Montreal Protocol-Regulated Potent Greenhouse Gas HFC-152a Emissions in China Have Been Explained",
+                    journal: "Environmental Science & Technology (SCI一区 TOP)",
+                    impactFactor: "13",
+                    status: "已发表 2024"
+                },
+                {
+                    title: "Estimation of hydrofluorocarbon emissions from China and other non-Annex I countries",
+                    journal: "Nature Geoscience (Nature系列子刊)",
+                    impactFactor: "16",
+                    status: "已发表 2026"
+                },
+                {
+                    title: "Emissions of fully fluorinated greenhouse gases in central-eastern China inferred from atmospheric observations",
+                    journal: "Journal of Environmental Management",
+                    impactFactor: "6",
+                    status: "已发表 2026"
+                }
+            ],
+            
+            // 社交链接
+            socialLinks: [
+                { name: "邮箱", url: "mailto:qianna2001@163.com" },
+                { name: "电话", url: "tel:18631283988" }
+            ]
+        };
+
+        // ============================================
+        // Vue 3 App
+        // ============================================
+        const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
+
+        createApp({
+            setup() {
+                // 光标位置
+                const cursorX = ref(0);
+                const cursorY = ref(0);
+                const dotX = ref(0);
+                const dotY = ref(0);
+                const isHovering = ref(false);
+                const activeTimeline = ref(0);
+
+                // 光标样式
+                const cursorStyle = computed(() => ({
+                    left: cursorX.value + 'px',
+                    top: cursorY.value + 'px'
+                }));
+
+                const dotStyle = computed(() => ({
+                    left: dotX.value + 'px',
+                    top: dotY.value + 'px'
+                }));
+
+                // 鼠标移动处理
+                const handleMouseMove = (e) => {
+                    // 外圈光标跟随（带延迟效果）
+                    gsap.to(cursorX, {
+                        value: e.clientX,
+                        duration: 0.15,
+                        ease: "power2.out"
+                    });
+                    gsap.to(cursorY, {
+                        value: e.clientY,
+                        duration: 0.15,
+                        ease: "power2.out"
+                    });
+                    
+                    // 内圈点直接跟随
+                    dotX.value = e.clientX;
+                    dotY.value = e.clientY;
+                };
+
+                // 磁吸效果
+                const handleMagneticMove = (e) => {
+                    const target = e.currentTarget;
+                    const rect = target.getBoundingClientRect();
+                    const x = e.clientX - rect.left - rect.width / 2;
+                    const y = e.clientY - rect.top - rect.height / 2;
+                    
+                    gsap.to(target, {
+                        x: x * 0.3,
+                        y: y * 0.3,
+                        duration: 0.3,
+                        ease: "power2.out"
+                    });
+                };
+
+                const handleMagneticLeave = (e) => {
+                    gsap.to(e.currentTarget, {
+                        x: 0,
+                        y: 0,
+                        duration: 0.3,
+                        ease: "power2.out"
+                    });
+                };
+
+                // GSAP 动画
+                const initAnimations = () => {
+                    gsap.registerPlugin(ScrollTrigger);
+
+                    // Hero 入场动画
+                    const heroTl = gsap.timeline({ delay: 0.3 });
+                    
+                    heroTl.to('.hero-subtitle', {
+                        opacity: 1,
+                        y: 0,
+                        duration: 0.8,
+                        ease: "power3.out"
+                    })
+                    .from('.hero-title', {
+                        opacity: 0,
+                        y: 100,
+                        duration: 1.2,
+                        ease: "power3.out"
+                    }, "-=0.4")
+                    .to('.hero-desc', {
+                        opacity: 1,
+                        y: 0,
+                        duration: 0.8,
+                        ease: "power3.out"
+                    }, "-=0.6")
+                    .to('.hero-cta', {
+                        opacity: 1,
+                        y: 0,
+                        duration: 0.8,
+                        ease: "power3.out"
+                    }, "-=0.4")
+                    .to('.hero-scroll', {
+                        opacity: 1,
+                        duration: 0.8
+                    }, "-=0.2");
+
+                    // Section Titles
+                    gsap.utils.toArray('.section-title').forEach(title => {
+                        gsap.to(title, {
+                            opacity: 1,
+                            y: 0,
+                            duration: 0.8,
+                            ease: "power3.out",
+                            scrollTrigger: {
+                                trigger: title,
+                                start: "top 80%",
+                                toggleActions: "play none none reverse"
+                            }
+                        });
+                    });
+
+                    // Bento Cards
+                    gsap.utils.toArray('.bento-card').forEach((card, i) => {
+                        gsap.to(card, {
+                            opacity: 1,
+                            y: 0,
+                            duration: 0.6,
+                            delay: i * 0.1,
+                            ease: "power3.out",
+                            scrollTrigger: {
+                                trigger: card,
+                                start: "top 85%",
+                                toggleActions: "play none none reverse"
+                            }
+                        });
+                    });
+
+                    // Timeline Items
+                    gsap.utils.toArray('.timeline-item').forEach((item, i) => {
+                        gsap.from(item, {
+                            opacity: 0,
+                            x: -30,
+                            duration: 0.6,
+                            delay: i * 0.15,
+                            ease: "power3.out",
+                            scrollTrigger: {
+                                trigger: item,
+                                start: "top 85%",
+                                toggleActions: "play none none reverse",
+                                onEnter: () => {
+                                    if (i === 0) activeTimeline.value = 0;
+                                }
+                            }
+                        });
+                    });
+
+                    // Publication Cards
+                    gsap.utils.toArray('.pub-card').forEach((card, i) => {
+                        gsap.to(card, {
+                            opacity: 1,
+                            y: 0,
+                            duration: 0.6,
+                            delay: i * 0.15,
+                            ease: "power3.out",
+                            scrollTrigger: {
+                                trigger: card,
+                                start: "top 85%",
+                                toggleActions: "play none none reverse"
+                            }
+                        });
+                    });
+
+                    // Footer
+                    gsap.to('.footer-subtitle', {
+                        opacity: 1,
+                        y: 0,
+                        duration: 0.6,
+                        ease: "power3.out",
+                        scrollTrigger: {
+                            trigger: 'footer',
+                            start: "top 70%",
+                            toggleActions: "play none none reverse"
+                        }
+                    });
+
+                    gsap.to('.footer-title', {
+                        opacity: 1,
+                        y: 0,
+                        duration: 0.8,
+                        delay: 0.2,
+                        ease: "power3.out",
+                        scrollTrigger: {
+                            trigger: 'footer',
+                            start: "top 70%",
+                            toggleActions: "play none none reverse"
+                        }
+                    });
+
+                    gsap.to('.footer-contact', {
+                        opacity: 1,
+                        y: 0,
+                        duration: 0.6,
+                        delay: 0.4,
+                        ease: "power3.out",
+                        scrollTrigger: {
+                            trigger: 'footer',
+                            start: "top 70%",
+                            toggleActions: "play none none reverse"
+                        }
+                    });
+
+                    gsap.to('.footer-social', {
+                        opacity: 1,
+                        y: 0,
+                        duration: 0.6,
+                        delay: 0.6,
+                        ease: "power3.out",
+                        scrollTrigger: {
+                            trigger: 'footer',
+                            start: "top 70%",
+                            toggleActions: "play none none reverse"
+                        }
+                    });
+                };
+
+                onMounted(() => {
+                    // 添加鼠标移动监听
+                    window.addEventListener('mousemove', handleMouseMove);
+                    
+                    // 磁吸效果
+                    document.querySelectorAll('.magnetic').forEach(el => {
+                        el.addEventListener('mousemove', handleMagneticMove);
+                        el.addEventListener('mouseleave', handleMagneticLeave);
+                    });
+
+                    // 初始化动画
+                    initAnimations();
+                });
+
+                onUnmounted(() => {
+                    window.removeEventListener('mousemove', handleMouseMove);
+                });
+
+                return {
+                    profileData,
+                    cursorStyle,
+                    dotStyle,
+                    isHovering,
+                    activeTimeline
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
